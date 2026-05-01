@@ -1,0 +1,22 @@
+# ===== Python =====
+__pycache__/
+*.pyc
+
+# ===== Conda =====
+*.conda
+env/
+.conda/
+
+# ===== 数据（不要提交）=====
+data/
+*.bin
+
+# ===== 模型（不要提交）=====
+*.pth
+*.pt
+
+# ===== vscode =====
+.vscode/
+
+# ===== 系统文件 =====
+.DS_Store
