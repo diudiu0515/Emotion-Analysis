@@ -6,15 +6,14 @@ import torch
 from gensim.models import KeyedVectors
 from torch.utils.data import Dataset
 
-
+# 设置随机种子以确保结果可复现
 def set_seed(seed=42):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
-
-def read_txt(path: str) -> Tuple[List[List[str]], List[int]]:
+def read_txt(path):
     texts, labels = [], []
 
     with open(path, "r", encoding="utf-8") as f:
@@ -24,57 +23,49 @@ def read_txt(path: str) -> Tuple[List[List[str]], List[int]]:
             if not line:
                 continue
 
-            parts = line.split(" ", 1)
+            parts = line.split("\t", 1)
             label = int(parts[0])
-            words = parts[1].split("\t") if len(parts) > 1 else []
+
+            if len(parts) > 1:
+                words = parts[1].strip().split()
+            else:
+                words = []
 
             labels.append(label)
             texts.append(words)
 
     return texts, labels
 
-
 def build_vocab(all_texts, min_freq=1) -> Dict[str, int]:
     freq = {}
-
     for sent in all_texts:
         for word in sent:
             freq[word] = freq.get(word, 0) + 1
-
     vocab = {
-        "<PAD>": 0,
-        "<UNK>": 1
+        "<PAD>": 0,  #补齐符号
+        "<UNK>": 1   #未知词
     }
-
     for word, count in sorted(freq.items(), key=lambda x: (-x[1], x[0])):
         if count >= min_freq:
             vocab[word] = len(vocab)
-
     return vocab
 
-
+# 加载预训练的词向量，并构建嵌入矩阵
 def build_embedding_matrix(vocab, w2v_path, embed_dim=50):
     print("Loading word2vec:", w2v_path)
-
     w2v = KeyedVectors.load_word2vec_format(w2v_path, binary=True)
-
     embedding = np.random.normal(
         0,
         0.1,
         size=(len(vocab), embed_dim)
     ).astype(np.float32)
-
     embedding[vocab["<PAD>"]] = np.zeros(embed_dim, dtype=np.float32)
-
     hit = 0
-
     for word, idx in vocab.items():
         if word in w2v:
             embedding[idx] = w2v[word]
             hit += 1
-
     print(f"Embedding hit: {hit}/{len(vocab)}")
-
     return embedding
 
 
@@ -90,9 +81,7 @@ class SentimentDataset(Dataset):
             self.vocab.get(word, self.vocab["<UNK>"])
             for word in words[:self.max_len]
         ]
-
-        ids += [self.vocab["<PAD>"]] * (self.max_len - len(ids))
-
+        ids += [self.vocab["<PAD>"]] * (self.max_len - len(ids)) # 补齐到最大长度
         return ids
 
     def __len__(self):
