@@ -7,9 +7,9 @@ class TextCNN(nn.Module):
         self,
         embedding_matrix,
         num_classes=2,
-        filter_sizes=(2, 3, 4),
+        filter_sizes=(2, 3, 4), #able
         num_filters=100,
-        dropout=0.5
+        dropout=0.5 #able
     ):
         super().__init__()
 
@@ -128,3 +128,40 @@ class TextMLP(nn.Module):
         avg = (emb * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1.0)
 
         return self.classifier(avg)
+    
+class TextAttention(nn.Module):
+    def __init__(
+        self,
+        embedding_matrix,
+        hidden_size=128,
+        dropout=0.5,
+        num_classes=2
+    ):
+        super().__init__()
+
+        vocab_size, embed_dim = embedding_matrix.shape
+
+        self.embedding = nn.Embedding.from_pretrained(
+            torch.tensor(embedding_matrix),
+            freeze=False,
+            padding_idx=0
+        )
+
+        self.attention = nn.Sequential(
+            nn.Linear(embed_dim, hidden_size),
+            nn.Tanh(),
+            nn.Linear(hidden_size, 1)
+        )
+
+        self.dropout = nn.Dropout(dropout)
+        self.fc = nn.Linear(embed_dim, num_classes)
+
+    def forward(self, x):
+        emb = self.embedding(x) 
+        mask = (x != 0) 
+        scores = self.attention(emb).squeeze(-1)  
+        scores = scores.masked_fill(mask == 0, -1e9)
+        weights = torch.softmax(scores, dim=1)  
+        sentence_vec = torch.sum(emb * weights.unsqueeze(-1), dim=1) 
+        sentence_vec = self.dropout(sentence_vec)
+        return self.fc(sentence_vec)

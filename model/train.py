@@ -4,6 +4,10 @@ import torch
 import torch.nn as nn
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from tqdm import tqdm
+import csv
+import os
+from datetime import datetime
+from logger import save_metrics
 
 
 @dataclass
@@ -13,7 +17,6 @@ class Metrics:
     precision: float
     recall: float
     f1: float
-
 
 def evaluate(model, loader, criterion, device):
     model.eval()
@@ -26,14 +29,10 @@ def evaluate(model, loader, criterion, device):
         for x, y in loader:
             x = x.to(device)
             y = y.to(device)
-
             logits = model(x)
             loss = criterion(logits, y)
-
             total_loss += loss.item() * y.size(0)
-
             pred = torch.argmax(logits, dim=1)
-
             preds.extend(pred.cpu().numpy().tolist())
             golds.extend(y.cpu().numpy().tolist())
 
@@ -46,15 +45,12 @@ def evaluate(model, loader, criterion, device):
     )
 
 
-def train_model(model, train_loader, val_loader, test_loader, args, model_name):
+def train_model(model, train_loader, val_loader, test_loader, args, model_name, run_dir):
     device = torch.device(
         "cuda" if torch.cuda.is_available() and not args.cpu else "cpu"
     )
-
     model = model.to(device)
-
     criterion = nn.CrossEntropyLoss()
-
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=args.lr,
@@ -124,5 +120,5 @@ def train_model(model, train_loader, val_loader, test_loader, args, model_name):
         f"Recall={test_metrics.recall:.4f}, "
         f"F1={test_metrics.f1:.4f}"
     )
-
+    save_metrics(run_dir, model_name, test_metrics)
     return test_metrics

@@ -1,5 +1,5 @@
 import os
-
+from logger import create_run_dir, save_config
 from torch.utils.data import DataLoader
 
 from config import get_args
@@ -10,13 +10,15 @@ from data_trans import (
     build_embedding_matrix,
     SentimentDataset
 )
-from models import TextCNN, TextRNN, TextMLP
+from models import TextCNN, TextRNN, TextMLP, TextAttention
 from train import train_model
 
 
 def main():
     args = get_args()
-
+    run_dir = create_run_dir()
+    save_config(args, run_dir)
+    print(f"Results will be saved to: {run_dir}")
     set_seed(args.seed)
 
     train_path = os.path.join(args.data_dir, "train.txt")
@@ -93,7 +95,8 @@ def main():
         val_loader,
         test_loader,
         args,
-        "CNN"
+        "CNN",
+        run_dir
     )
 
     rnn = TextRNN(
@@ -109,7 +112,8 @@ def main():
         val_loader,
         test_loader,
         args,
-        "BiLSTM"
+        "BiLSTM",
+        run_dir
     )
 
     mlp = TextMLP(
@@ -124,7 +128,24 @@ def main():
         val_loader,
         test_loader,
         args,
-        "MLP"
+        "MLP",
+        run_dir
+    )
+
+    attention = TextAttention(
+    embedding_matrix,
+    hidden_size=128,
+    dropout=args.dropout
+    )
+
+    results["Attention"] = train_model(
+        attention,
+        train_loader,
+        val_loader,
+        test_loader,
+        args,
+        "Attention",
+        run_dir
     )
 
     print("\n===== Final Results =====")
