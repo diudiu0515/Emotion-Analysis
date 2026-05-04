@@ -1,0 +1,13 @@
+{
+    "data_dir": "./Dataset",
+    "seed": 42,
+    "epochs": 8,
+    "batch_size": 32,
+    "max_len": 80,
+    "min_freq": 1,
+    "lr": 0.0005,
+    "weight_decay": 1e-05,
+    "dropout": 0.6,
+    "patience": 4,
+    "cpu": false
+}

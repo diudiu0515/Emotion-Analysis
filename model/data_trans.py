@@ -17,23 +17,34 @@ def read_txt(path):
     texts, labels = [], []
 
     with open(path, "r", encoding="utf-8") as f:
-        for line in f:
+        for line_no, line in enumerate(f, start=1):
             line = line.strip()
 
             if not line:
                 continue
 
-            parts = line.split("\t", 1)
-            label = int(parts[0])
+            if ". " in line[:5]:
+                line = line.split(". ", 1)[1]
 
-            if len(parts) > 1:
-                words = parts[1].strip().split()
-            else:
-                words = []
+            parts = line.split("\t", 1)
+
+            if len(parts) != 2:
+                print(f"Skip bad line {line_no}: {line}")
+                continue
+
+            label_str, sent = parts[0].strip(), parts[1].strip()
+
+            if label_str not in ["0", "1"]:
+                print(f"Skip bad label line {line_no}: {line}")
+                continue
+
+            label = int(label_str)
+            words = sent.split()
 
             labels.append(label)
             texts.append(words)
 
+    print(f"Loaded {len(texts)} samples from {path}")
     return texts, labels
 
 def build_vocab(all_texts, min_freq=1) -> Dict[str, int]:
