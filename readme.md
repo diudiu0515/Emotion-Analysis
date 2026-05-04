@@ -1,98 +1,114 @@
 # Sentiment Analysis (Text Classification)
 
-一个基于 PyTorch 的情感分析项目，实现了多种模型（CNN / BiLSTM / MLP / Attention），并支持实验日志记录与结果对比分析。
+一个基于 PyTorch 的情感分析项目，实现 CNN / BiLSTM / MLP / Attention 模型，并结合大模型生成数据进行鲁棒性分析。
+
+---
 
 ## Project Structure
 
 ```
 .
-├── Dataset/              # 数据集
+├── Dataset/                 # 原始数据 + LLM生成数据
+├── Dataset_llm/             # LLM划分后的训练/验证集
 ├── model/
-│   ├── config.py        # 参数配置
-│   ├── data_trans.py    # 数据处理（读取、词表、embedding）
-│   ├── models.py        # 模型定义（CNN / RNN / MLP / Attention）
-│   ├── train.py         # 训练与评估逻辑
-│   ├── logger.py        # 实验日志记录
-│   └── main.py          # 主程序（调度训练流程）
-├── results/             # 实验结果（按时间自动生成）
+│   ├── config.py           # 参数配置
+│   ├── data_trans.py       # 数据处理
+│   ├── models.py           # CNN / RNN / MLP / Attention
+│   ├── train.py            # 训练与评估
+│   ├── main.py             # 主程序入口
+│   ├── plot_results.py     # 结果可视化
+│   └── generate_robust_data_deepseek.py  # LLM数据生成
+├── results/                 # 实验日志（自动生成）
 └── README.md
-```
-
-
-## Models
-
-本项目实现了四种文本分类模型：
-
-* **TextCNN**：卷积网络，捕捉 n-gram 局部特征
-* **BiLSTM**：双向 LSTM，建模上下文依赖
-* **MLP**：平均词向量的 baseline 模型
-* **Attention**：基于注意力机制的加权表示
-
-
-## Method Overview
-
-* 使用 **Word2Vec** 预训练词向量
-* 文本 → embedding → 模型 → 分类
-* 使用以下指标评估模型性能：
-
-```
-Accuracy / Precision / Recall / F1-score
-```
-
-## Environment
-
-推荐使用 conda：
-
-```bash
-conda create -n sentiment python=3.10
-conda activate sentiment
-pip install torch numpy scikit-learn tqdm
-```
-注意：
-
-```bash
-pip install numpy==1.26.4
-```
-避免 numpy 2.x 与 PyTorch 不兼容问题。
-
-
-## Usage
-
-运行训练：
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python model/main.py --epochs 5
-```
-
-常用参数：
-
-```
---epochs        训练轮数
---batch_size    batch 大小
---lr            学习率
---dropout       dropout 比例
---max_len       最大句长
---min_freq      词频阈值
 ```
 
 ---
 
-## Experiment Logging
+## Features
 
-每次运行会自动生成一个时间戳文件夹：
+* 多模型实现：CNN / BiLSTM / MLP / Attention
+* 支持 Word2Vec 预训练 embedding
+* 自动日志记录（每次训练独立目录）
+* 参数调优对比（lr / dropout）
+* 可视化脚本（自动画图）
+* 大模型生成数据（DeepSeek API）
+* 鲁棒性分析（分布迁移）
+
+---
+
+## Environment
+
+```bash
+conda create -n sentiment python=3.10
+conda activate sentiment
+pip install torch numpy pandas matplotlib scikit-learn tqdm
+```
+```bash
+pip install numpy==1.26.4
+```
+
+---
+
+## Training
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python model/main.py \
+  --data_dir ./Dataset \
+  --epochs 8 \
+  --batch_size 32 \
+  --lr 0.0005 \
+  --dropout 0.5
+```
+
+---
+
+## Generate LLM Data
+
+```bash
+export DEEPSEEK_API_KEY=your_key
+python model/generate_robust_data_deepseek.py
+```
+
+---
+
+## Visualization
+
+```bash
+python model/plot_results.py
+```
+
+生成：
 
 ```
-results/YYYY-MM-DD_HH-MM/
-├── config.json    # 本次实验参数
-└── metrics.csv    # 各模型测试结果
+results/figures/
 ```
 
-示例：
+---
 
-```
-model,accuracy,precision,recall,f1,loss
-CNN,0.8455,...
-BiLSTM,0.8130,...
-MLP,0.8537,...
-Attention,0.8455,...
-```
+## Results Summary
+
+| Model     | F1 (Original) | F1 (LLM Data) |
+| --------- | ------------- | ------------- |
+| CNN       | ~0.85         | ~0.86         |
+| BiLSTM    | ~0.80         | **~0.92**     |
+| MLP       | ~0.85         | ~0.89         |
+| Attention | ~0.84         | ~0.68         |
+
+---
+
+## Key Insights
+
+* CNN / MLP 在真实数据上更稳定
+* BiLSTM 在结构化（LLM）数据上更强
+* Attention 对数据分布敏感
+* 模型性能强依赖数据分布
+
+---
+
+## Robustness Evaluation
+
+使用大模型生成数据：
+
+* 否定句（不是很好）
+* 转折句（虽然...但是...）
+* 口语表达
