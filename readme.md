@@ -29,8 +29,8 @@
 * 多模型实现：CNN / BiLSTM / MLP / Attention
 * 支持 Word2Vec 预训练 embedding
 * 自动日志记录（每次训练独立目录）
-* 参数调优对比（lr / dropout）
-* 可视化脚本（自动画图）
+* 参数调优对比（lr / dropout /epochs）
+* 可视化脚本（自动画图，针对dropout调参结果）
 * 大模型生成数据（DeepSeek API）
 * 鲁棒性分析（分布迁移）
 
@@ -54,9 +54,9 @@ pip install numpy==1.26.4
 ```bash
 CUDA_VISIBLE_DEVICES=0 python model/main.py \
   --data_dir ./Dataset \
-  --epochs 8 \
+  --epochs 5 \
   --batch_size 32 \
-  --lr 0.0005 \
+  --lr 0.001 \
   --dropout 0.5
 ```
 
@@ -80,28 +80,8 @@ python model/plot_results.py
 生成：
 
 ```
-results/figures/
+results/figures_dropout/
 ```
-
----
-
-## Results Summary
-
-| Model     | F1 (Original) | F1 (LLM Data) |
-| --------- | ------------- | ------------- |
-| CNN       | ~0.85         | ~0.86         |
-| BiLSTM    | ~0.80         | **~0.92**     |
-| MLP       | ~0.85         | ~0.89         |
-| Attention | ~0.84         | ~0.68         |
-
----
-
-## Key Insights
-
-* CNN / MLP 在真实数据上更稳定
-* BiLSTM 在结构化（LLM）数据上更强
-* Attention 对数据分布敏感
-* 模型性能强依赖数据分布
 
 ---
 
